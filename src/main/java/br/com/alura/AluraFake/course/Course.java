@@ -1,10 +1,12 @@
 package br.com.alura.AluraFake.course;
 
+import br.com.alura.AluraFake.task.Task;
 import br.com.alura.AluraFake.user.User;
 import jakarta.persistence.*;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 public class Course {
@@ -20,6 +22,9 @@ public class Course {
     @Enumerated(EnumType.STRING)
     private Status status;
     private LocalDateTime publishedAt;
+
+    @OneToMany
+    private List<Task> tasks;
 
     @Deprecated
     public Course(){}
