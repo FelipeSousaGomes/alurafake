@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.hibernate.validator.constraints.Length;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
@@ -15,22 +18,14 @@ public abstract class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotNull
-    @NotBlank
-    @Length(min = 4, max = 255)
-    @Column(nullable = false, length = 255)
     private String statement;
-
-    @NotNull
-    @Positive
-    @Column(name = "task_order", nullable = false)
     private Integer order;
-
-    @NotNull
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Option> options = new ArrayList<>();
 
     protected Task( String statement, Integer order, Course course) {
         this.statement = statement;
@@ -64,6 +59,10 @@ public abstract class Task {
 
     public Course getCourse() {
         return course;
+    }
+
+    public List<Option> getOptions() {
+        return options;
     }
 
     public abstract Type getType();

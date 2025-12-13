@@ -1,33 +1,25 @@
 package br.com.alura.AluraFake.task;
 
+import br.com.alura.AluraFake.course.Course;
 import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-
-import java.util.List;
 
 @Entity
 @DiscriminatorValue("SINGLE_CHOICE")
 public class SingleChoiceTask extends Task {
 
-
-    @Deprecated
-    public SingleChoiceTask() {
+    public SingleChoiceTask(String statement, Integer order, Course course) {
+        super(statement, order, course);
     }
 
-    @ElementCollection
-    private List<String> options;
+    @Deprecated
+    protected SingleChoiceTask() {
+    }
 
     @Override
     public Type getType() {
         return Type.SINGLE_CHOICE;
     }
 
-    public List<String> getOptions() {
-        return options;
     }
 
-    public void setOptions(List<String> options) {
-        this.options = options;
-    }
-}
