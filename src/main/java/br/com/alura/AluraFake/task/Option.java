@@ -1,7 +1,6 @@
 package br.com.alura.AluraFake.task;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,7 +22,6 @@ public class Option {
 
     @NotNull
     @Column(nullable = false)
-    @JsonProperty("isCorrect")
     private Boolean isCorrect;
 
     @ManyToOne
@@ -52,13 +50,14 @@ public class Option {
         this.optionText = optionText;
     }
 
-    public Boolean isCorrect() {
+    public Boolean getIsCorrect() {
         return isCorrect;
     }
 
-    public void setCorrect(Boolean correct) {
-        isCorrect = correct;
+    public void setIsCorrect(Boolean isCorrect) {
+        this.isCorrect = isCorrect;
     }
+
 
     public Task getTask() {
         return task;
