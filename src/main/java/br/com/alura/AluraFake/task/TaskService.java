@@ -7,6 +7,7 @@ import br.com.alura.AluraFake.task.dto.NewMultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.NewOpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.NewSingleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final CourseRepository courseRepository;
 
+    @Autowired
     public TaskService(TaskRepository taskRepository, CourseRepository courseRepository) {
         this.taskRepository = taskRepository;
         this.courseRepository = courseRepository;

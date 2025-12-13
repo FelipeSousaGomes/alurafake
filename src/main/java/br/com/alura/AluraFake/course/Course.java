@@ -37,6 +37,12 @@ public class Course {
         this.status = Status.BUILDING;
     }
 
+
+    public void publish() {
+        this.status = Status.PUBLISHED;
+        this.publishedAt = LocalDateTime.now();
+    }
+
     public Long getId() {
         return id;
     }
