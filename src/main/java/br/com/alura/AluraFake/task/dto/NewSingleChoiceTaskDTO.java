@@ -1,7 +1,6 @@
 package br.com.alura.AluraFake.task.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -9,14 +8,13 @@ import org.hibernate.validator.constraints.Length;
 
 import java.util.List;
 
-public class NewChoiceTaskDTO {
+public class NewSingleChoiceTaskDTO {
 
     @NotNull(message = "Course ID cannot be null")
     @Positive(message = "Course ID must be positive")
     private Long courseId;
 
     @NotNull(message = "Statement cannot be null")
-    @NotBlank(message = "Statement cannot be blank")
     @Length(min = 4, max = 255, message = "Statement must be between 4 and 255 characters")
     private String statement;
 
@@ -25,12 +23,11 @@ public class NewChoiceTaskDTO {
     private Integer order;
 
     @NotNull(message = "Options cannot be null")
-    @Size(min = 2, message = "Must have at least 2 options")
+    @Size(min = 2, max = 5, message = "Must have between 2 and 5 options")
     @Valid
     private List<OptionDTO> options;
 
-
-    public NewChoiceTaskDTO() {}
+    public NewSingleChoiceTaskDTO() {}
 
     public Long getCourseId() {
         return courseId;

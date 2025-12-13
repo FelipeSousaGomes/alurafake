@@ -1,11 +1,8 @@
 package br.com.alura.AluraFake.task;
 
 import br.com.alura.AluraFake.course.Course;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import org.hibernate.validator.constraints.Length;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +16,19 @@ public abstract class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String statement;
-    private Integer order;
+    @Column(name = "task_order")
+    private Integer taskOrder;
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "task")
+    @JsonManagedReference
     private List<Option> options = new ArrayList<>();
 
-    protected Task( String statement, Integer order, Course course) {
+    protected Task( String statement, Integer taskOrder, Course course) {
         this.statement = statement;
-        this.order = order;
+        this.taskOrder = taskOrder;
         this.course = course;
     }
 
@@ -49,12 +48,12 @@ public abstract class Task {
     }
 
 
-    public Integer getOrder() {
-        return order;
+    public Integer getTaskOrder() {
+        return taskOrder;
     }
 
-    public void setOrder(Integer order) {
-        this.order = order;
+    public void setTaskOrder(Integer taskOrder) {
+        this.taskOrder = taskOrder;
     }
 
     public Course getCourse() {
@@ -65,5 +64,18 @@ public abstract class Task {
         return options;
     }
 
+    public void setCourse(Course course) {
+        this.course = course;
+    }
+
+    public void setStatement(String statement) {
+        this.statement = statement;
+    }
+
+    public void setOptions(List<Option> options) {
+        this.options = options;
+    }
+
     public abstract Type getType();
+
 }
