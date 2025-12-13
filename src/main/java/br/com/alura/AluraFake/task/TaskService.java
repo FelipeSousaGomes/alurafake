@@ -29,20 +29,8 @@ public class TaskService {
 
     @Transactional
     public OpenTextTask createOpenTextTask(NewOpenTextTaskDTO dto) {
-        Course course = courseRepository.findById(dto.getCourseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
-
-        if (course.getStatus() != Status.BUILDING) {
-            throw new IllegalArgumentException("Course is not in BUILDING status");
-        }
-
-        if (taskRepository.existsByCourseAndStatement(course, dto.getStatement())) {
-            throw new IllegalArgumentException("Statement already exists in this course");
-        }
-
-        validateOrderSequence(course.getId(), dto.getOrder());
-
-        adjustTaskOrders(course.getId(), dto.getOrder());
+        Course course = validateAndGetCourse(dto.getCourseId(), dto.getStatement());
+        prepareTaskOrder(course.getId(), dto.getOrder());
 
         OpenTextTask task = new OpenTextTask();
         task.setCourse(course);
@@ -54,49 +42,69 @@ public class TaskService {
 
     @Transactional
     public SingleChoiceTask createSingleChoiceTask(NewSingleChoiceTaskDTO dto) {
-        Course course = courseRepository.findById(dto.getCourseId())
+        Course course = validateAndGetCourse(dto.getCourseId(), dto.getStatement());
+        validateSingleChoiceOptions(dto.getOptions(), dto.getStatement());
+        prepareTaskOrder(course.getId(), dto.getOrder());
+
+        SingleChoiceTask task = new SingleChoiceTask();
+        task.setCourse(course);
+        task.setStatement(dto.getStatement());
+        task.setTaskOrder(dto.getOrder());
+        task.setOptions(mapOptions(dto.getOptions(), task));
+
+        return taskRepository.save(task);
+    }
+
+    @Transactional
+    public MultipleChoiceTask createMultipleChoiceTask(NewMultipleChoiceTaskDTO dto) {
+        Course course = validateAndGetCourse(dto.getCourseId(), dto.getStatement());
+        validateMultipleChoiceOptions(dto.getOptions(), dto.getStatement());
+        prepareTaskOrder(course.getId(), dto.getOrder());
+
+        MultipleChoiceTask task = new MultipleChoiceTask();
+        task.setCourse(course);
+        task.setStatement(dto.getStatement());
+        task.setTaskOrder(dto.getOrder());
+        task.setOptions(mapOptions(dto.getOptions(), task));
+
+        return taskRepository.save(task);
+    }
+
+    private Course validateAndGetCourse(Long courseId, String statement) {
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
 
         if (course.getStatus() != Status.BUILDING) {
             throw new IllegalArgumentException("Course is not in BUILDING status");
         }
 
-        if (taskRepository.existsByCourseAndStatement(course, dto.getStatement())) {
+        if (taskRepository.existsByCourseAndStatement(course, statement)) {
             throw new IllegalArgumentException("Statement already exists in this course");
         }
 
+        return course;
+    }
 
-        validateSingleChoiceOptions(dto.getOptions(), dto.getStatement());
+    private void prepareTaskOrder(Long courseId, Integer newOrder) {
+        validateOrderSequence(courseId, newOrder);
+        adjustTaskOrders(courseId, newOrder);
+    }
 
-
-        validateOrderSequence(course.getId(), dto.getOrder());
-        adjustTaskOrders(course.getId(), dto.getOrder());
-
-        SingleChoiceTask task = new SingleChoiceTask();
-        task.setCourse(course);
-        task.setStatement(dto.getStatement());
-        task.setTaskOrder(dto.getOrder());
-
-
-        List<Option> options = dto.getOptions().stream()
-                .map(optionDTO -> {
+    private List<Option> mapOptions(List<OptionDTO> dtos, Task task) {
+        return dtos.stream()
+                .map(dto -> {
                     Option option = new Option();
-                    option.setOptionText(optionDTO.getOption());
-                    option.setIsCorrect(optionDTO.getIsCorrect());
+                    option.setOptionText(dto.getOption());
+                    option.setIsCorrect(dto.getIsCorrect());
                     option.setTask(task);
                     return option;
                 })
                 .toList();
-
-        task.setOptions(options);
-
-        return taskRepository.save(task);
     }
 
     private void validateSingleChoiceOptions(List<OptionDTO> options, String statement) {
-        if (options == null || options.isEmpty()) {
-            throw new IllegalArgumentException("Options list cannot be null or empty");
-        }
+        validateOptionsNotEmpty(options);
+
         long correctCount = options.stream()
                 .filter(OptionDTO::getIsCorrect)
                 .count();
@@ -104,67 +112,12 @@ public class TaskService {
         if (correctCount != 1) {
             throw new IllegalArgumentException("Single choice task must have exactly one correct option");
         }
-        Set<String> optionTexts = new HashSet<>();
-        for (OptionDTO option : options) {
-            String normalizedOption = option.getOption().trim().toLowerCase();
 
-            if (!optionTexts.add(normalizedOption)) {
-                throw new IllegalArgumentException("Options cannot be duplicated");
-            }
-            if (normalizedOption.equals(statement.trim().toLowerCase())) {
-                throw new IllegalArgumentException("Option cannot be equal to statement");
-            }
-        }
+        validateUniqueOptions(options, statement);
     }
-
-
-
-    @Transactional
-    public MultipleChoiceTask createMultipleChoiceTask(NewMultipleChoiceTaskDTO dto) {
-        Course course = courseRepository.findById(dto.getCourseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
-
-        if (course.getStatus() != Status.BUILDING) {
-            throw new IllegalArgumentException("Course is not in BUILDING status");
-        }
-
-        if (taskRepository.existsByCourseAndStatement(course, dto.getStatement())) {
-            throw new IllegalArgumentException("Statement already exists in this course");
-        }
-
-        validateMultipleChoiceOptions(dto.getOptions(), dto.getStatement());
-
-        validateOrderSequence(course.getId(), dto.getOrder());
-        adjustTaskOrders(course.getId(), dto.getOrder());
-
-        MultipleChoiceTask task = new MultipleChoiceTask();
-        task.setCourse(course);
-        task.setStatement(dto.getStatement());
-        task.setTaskOrder(dto.getOrder());
-
-        List<Option> options = dto.getOptions().stream()
-                .map(optionDTO -> {
-                    Option option = new Option();
-                    option.setOptionText(optionDTO.getOption());
-                    option.setIsCorrect(optionDTO.getIsCorrect());
-                    option.setTask(task);
-                    return option;
-                })
-                .toList();
-
-        task.setOptions(options);
-
-        return taskRepository.save(task);
-    }
-
-
-
-
 
     private void validateMultipleChoiceOptions(List<OptionDTO> options, String statement) {
-        if (options == null || options.isEmpty()) {
-            throw new IllegalArgumentException("Options list cannot be null or empty");
-        }
+        validateOptionsNotEmpty(options);
 
         long correctCount = options.stream()
                 .filter(OptionDTO::getIsCorrect)
@@ -174,20 +127,30 @@ public class TaskService {
             throw new IllegalArgumentException("Multiple choice task must have at least two correct options");
         }
 
+        validateUniqueOptions(options, statement);
+    }
+
+    private void validateOptionsNotEmpty(List<OptionDTO> options) {
+        if (options == null || options.isEmpty()) {
+            throw new IllegalArgumentException("Options list cannot be null or empty");
+        }
+    }
+
+    private void validateUniqueOptions(List<OptionDTO> options, String statement) {
         Set<String> optionTexts = new HashSet<>();
+
         for (OptionDTO option : options) {
             String normalizedOption = option.getOption().trim().toLowerCase();
 
             if (!optionTexts.add(normalizedOption)) {
                 throw new IllegalArgumentException("Options cannot be duplicated");
             }
+
             if (normalizedOption.equals(statement.trim().toLowerCase())) {
                 throw new IllegalArgumentException("Option cannot be equal to statement");
             }
         }
     }
-
-
 
 
     private void validateOrderSequence(Long courseId, Integer newOrder) {
