@@ -13,7 +13,7 @@ public class OpenTextTask extends Task {
     }
 
     @Deprecated
-    protected OpenTextTask() {
+    public OpenTextTask() {
     }
 
     @Override
