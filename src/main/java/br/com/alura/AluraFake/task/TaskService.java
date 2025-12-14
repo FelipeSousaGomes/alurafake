@@ -138,17 +138,29 @@ public class TaskService {
 
     private void validateUniqueOptions(List<OptionDTO> options, String statement) {
         Set<String> optionTexts = new HashSet<>();
+        String normalizedStatement = normalizeText(statement);
 
         for (OptionDTO option : options) {
-            String normalizedOption = option.getOption().trim().toLowerCase();
+            String normalizedOption = normalizeText(option.getOption());
 
-            if (!optionTexts.add(normalizedOption)) {
-                throw new IllegalArgumentException("Options cannot be duplicated");
-            }
+            validateNoDuplicateOption(optionTexts, normalizedOption);
+            validateOptionNotEqualToStatement(normalizedOption, normalizedStatement);
+        }
+    }
 
-            if (normalizedOption.equals(statement.trim().toLowerCase())) {
-                throw new IllegalArgumentException("Option cannot be equal to statement");
-            }
+    private String normalizeText(String text) {
+        return text.trim().toLowerCase();
+    }
+
+    private void validateNoDuplicateOption(Set<String> optionTexts, String normalizedOption) {
+        if (!optionTexts.add(normalizedOption)) {
+            throw new IllegalArgumentException("Options cannot be duplicated");
+        }
+    }
+
+    private void validateOptionNotEqualToStatement(String normalizedOption, String normalizedStatement) {
+        if (normalizedOption.equals(normalizedStatement)) {
+            throw new IllegalArgumentException("Option cannot be equal to statement");
         }
     }
 
