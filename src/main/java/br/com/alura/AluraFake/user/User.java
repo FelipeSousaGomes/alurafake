@@ -2,21 +2,29 @@ package br.com.alura.AluraFake.user;
 
 import br.com.alura.AluraFake.util.PasswordGeneration;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private LocalDateTime createdAt = LocalDateTime.now();
     private String name;
+
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Column(unique = true)
     private String email;
-    // Por questões didáticas, a senha será armazenada em texto plano.
+
     private String password;
 
     @Deprecated
@@ -33,27 +41,53 @@ public class User {
         this(name, email, role, PasswordGeneration.generatePassword());
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    public String getName() {
-        return name;
+    @Override
+    public String getPassword() {
+        return password;
     }
 
-    public String getEmail() {
-        return email;
+    @Override
+    public String getUsername() {
+        return email; // Usamos o email como login
     }
 
-    public Role getRole() {
-        return role;
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+
+
+    public Long getId() { return id; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public Role getRole() { return role; }
 
     public boolean isInstructor() {
         return Role.INSTRUCTOR.equals(this.role);
-    }
-
-    public String getPassword() {
-        return password;
     }
 }
