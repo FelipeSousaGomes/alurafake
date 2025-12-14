@@ -67,7 +67,7 @@ public class CourseController {
     }
 
 
-    // Adicionar no CourseController.java
+
     @GetMapping("/instructor/{instructorId}/courses")
     public ResponseEntity getInstructorCoursesReport(@PathVariable("instructorId") Long instructorId) {
         Optional<User> possibleUser = userRepository.findById(instructorId);

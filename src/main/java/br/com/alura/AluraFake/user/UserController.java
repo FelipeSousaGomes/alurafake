@@ -1,8 +1,10 @@
 package br.com.alura.AluraFake.user;
 
 import br.com.alura.AluraFake.util.ErrorItemDTO;
+import br.com.alura.AluraFake.util.PasswordGeneration;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
+import org.springframework.security.crypto.password.PasswordEncoder; // 1. Importar
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +14,11 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder; // 2. Adicionar o encoder
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -24,7 +28,15 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorItemDTO("email", "Email já cadastrado no sistema"));
         }
-        User user = newUser.toModel();
+
+        String rawPassword = newUser.getPassword();
+        if (rawPassword == null || rawPassword.isEmpty()) {
+            rawPassword = PasswordGeneration.generatePassword();
+        }
+
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        User user = new User(newUser.getName(), newUser.getEmail(), newUser.getRole(), encodedPassword);
+
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -33,5 +45,4 @@ public class UserController {
     public List<UserListItemDTO> listAllUsers() {
         return userRepository.findAll().stream().map(UserListItemDTO::new).toList();
     }
-
 }
