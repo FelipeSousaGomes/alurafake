@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TaskServiceTest {
+class TaskServiceTest{
 
     @Mock
     private TaskRepository taskRepository;
@@ -44,7 +44,7 @@ class TaskServiceTest {
     }
 
 
-      // OPEN TEXT TEST
+    // OPEN TEXT TEST
     @Test
     void createOpenTextTask_shouldCreateSuccessfully_whenDataIsValid() {
         NewOpenTextTaskDTO dto = new NewOpenTextTaskDTO();
@@ -713,5 +713,252 @@ class TaskServiceTest {
         verify(taskRepository, never()).save(any(Task.class));
     }
 
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenLessThanTwoCorrectOptions() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais dessas são linguagens de programação?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Java", true),
+                new OptionDTO("HTML", false),
+                new OptionDTO("CSS", false)
+        ));
 
-   }
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Multiple choice task must have at least two correct options", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenOptionsListIsNull() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são características da POO?");
+        dto.setOrder(1);
+        dto.setOptions(null);
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Options list cannot be null or empty", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenOptionsListIsEmpty() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são palavras-chave do Java?");
+        dto.setOrder(1);
+        dto.setOptions(Collections.emptyList());
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Options list cannot be null or empty", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenDuplicateOptions() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são tipos de coleções em Java?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("List", true),
+                new OptionDTO("SET", false),
+                new OptionDTO("Set", true),
+                new OptionDTO("Map", true)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Options cannot be duplicated", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenOptionEqualsStatement() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são tipos primitivos?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("int", true),
+                new OptionDTO("double", true),
+                new OptionDTO("Quais são tipos primitivos?", false)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Option cannot be equal to statement", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenOrderSkipsSequence() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são tipos de dados numéricos em Java?");
+        dto.setOrder(5);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("int", true),
+                new OptionDTO("double", true),
+                new OptionDTO("String", false)
+        ));
+
+        when(course.getId()).thenReturn(1L);
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+        when(taskRepository.countByCourseId(1L)).thenReturn(2L);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Invalid order: cannot skip sequence. Maximum allowed order is 3", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldAdjustExistingTaskOrders_whenInsertingInMiddle() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são operadores lógicos em Java?");
+        dto.setOrder(2);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("&&", true),
+                new OptionDTO("||", true),
+                new OptionDTO("&", false)
+        ));
+
+        MultipleChoiceTask existingTask1 = new MultipleChoiceTask();
+        existingTask1.setTaskOrder(2);
+        existingTask1.setCourse(course);
+        existingTask1.setStatement("Questão existente 1");
+
+        MultipleChoiceTask existingTask2 = new MultipleChoiceTask();
+        existingTask2.setTaskOrder(3);
+        existingTask2.setCourse(course);
+        existingTask2.setStatement("Questão existente 2");
+
+        List<Task> existingTasks = Arrays.asList(existingTask1, existingTask2);
+
+        when(course.getId()).thenReturn(1L);
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+        when(taskRepository.countByCourseId(1L)).thenReturn(3L);
+        when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(1L, 2)).thenReturn(existingTasks);
+        when(taskRepository.save(any(MultipleChoiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MultipleChoiceTask result = taskService.createMultipleChoiceTask(dto);
+
+        assertNotNull(result);
+        assertEquals(dto.getStatement(), result.getStatement());
+        assertEquals(2, result.getTaskOrder());
+
+        assertEquals(3, existingTask1.getTaskOrder());
+        assertEquals(4, existingTask2.getTaskOrder());
+
+        verify(taskRepository, times(1)).saveAll(existingTasks);
+        verify(taskRepository, times(1)).save(any(MultipleChoiceTask.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldCreateAsFirstTask_whenCourseHasNoTasks() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são estruturas de repetição em Java?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("for", true),
+                new OptionDTO("while", true),
+                new OptionDTO("if", false)
+        ));
+
+        when(course.getId()).thenReturn(1L);
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+        when(taskRepository.countByCourseId(1L)).thenReturn(0L);
+        when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(1L, 1)).thenReturn(Collections.emptyList());
+        when(taskRepository.save(any(MultipleChoiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MultipleChoiceTask result = taskService.createMultipleChoiceTask(dto);
+
+        assertNotNull(result);
+        assertEquals(dto.getStatement(), result.getStatement());
+        assertEquals(1, result.getTaskOrder());
+        verify(taskRepository, times(1)).save(any(MultipleChoiceTask.class));
+        verify(taskRepository, times(1)).saveAll(Collections.emptyList());
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldCreateAtEnd_whenOrderIsAfterExistingTasks() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são frameworks Java populares?");
+        dto.setOrder(4);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Spring", true),
+                new OptionDTO("Hibernate", true),
+                new OptionDTO("React", false)
+        ));
+
+        when(course.getId()).thenReturn(1L);
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+        when(taskRepository.countByCourseId(1L)).thenReturn(3L);
+        when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(1L, 4)).thenReturn(Collections.emptyList());
+        when(taskRepository.save(any(MultipleChoiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MultipleChoiceTask result = taskService.createMultipleChoiceTask(dto);
+
+        assertNotNull(result);
+        assertEquals(dto.getStatement(), result.getStatement());
+        assertEquals(4, result.getTaskOrder());
+        verify(taskRepository, times(1)).save(any(MultipleChoiceTask.class));
+        verify(taskRepository, times(1)).saveAll(Collections.emptyList());
+    }
+
+}
