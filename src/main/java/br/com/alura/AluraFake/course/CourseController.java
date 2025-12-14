@@ -8,6 +8,7 @@ import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.*;
 
 @RestController
@@ -26,29 +27,27 @@ public class CourseController {
         this.courseService = courseService;
     }
 
-
     @Transactional
     @PostMapping("/course/new")
-    public ResponseEntity createCourse(@Valid @RequestBody NewCourseDTO newCourse) {
+    public ResponseEntity createCourse(@Valid @RequestBody NewCourseDTO newCourse, Principal principal) {
+        String emailLogado = principal.getName();
 
-        //Caso implemente o bonus, pegue o instrutor logado
-        Optional<User> possibleAuthor = userRepository
-                .findByEmail(newCourse.getEmailInstructor())
-                .filter(User::isInstructor);
+        User instructor = userRepository.findByEmail(emailLogado)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário logado não encontrado no banco"));
 
-        if(possibleAuthor.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorItemDTO("emailInstructor", "Usuário não é um instrutor"));
+        if (!instructor.isInstructor()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorItemDTO("user", "Apenas instrutores podem criar cursos"));
         }
 
-        Course course = new Course(newCourse.getTitle(), newCourse.getDescription(), possibleAuthor.get());
+        Course course = new Course(newCourse.getTitle(), newCourse.getDescription(), instructor);
 
         courseRepository.save(course);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/course/all")
-    public ResponseEntity<List<CourseListItemDTO>> createCourse() {
+    public ResponseEntity<List<CourseListItemDTO>> listAllCourses() {
         List<CourseListItemDTO> courses = courseRepository.findAll().stream()
                 .map(CourseListItemDTO::new)
                 .toList();
@@ -66,8 +65,6 @@ public class CourseController {
         }
     }
 
-
-
     @GetMapping("/instructor/{instructorId}/courses")
     public ResponseEntity getInstructorCoursesReport(@PathVariable("instructorId") Long instructorId) {
         Optional<User> possibleUser = userRepository.findById(instructorId);
@@ -78,12 +75,10 @@ public class CourseController {
 
         if (!possibleUser.get().isInstructor()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorItemDTO("instructorId", "Usuário não é um instrutor"));
+                    .body(new ErrorItemDTO("instructorId", "Usuário informado não é um instrutor"));
         }
 
         InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(instructorId);
         return ResponseEntity.ok(report);
     }
-
-
 }

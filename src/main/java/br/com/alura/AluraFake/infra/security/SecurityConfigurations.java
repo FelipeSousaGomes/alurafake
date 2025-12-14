@@ -20,7 +20,7 @@ public class SecurityConfigurations {
 
     private final SecurityFilter securityFilter;
 
-    // Injetamos o filtro que criamos no Passo 4
+
     public SecurityConfigurations(SecurityFilter securityFilter) {
         this.securityFilter = securityFilter;
     }
@@ -31,7 +31,7 @@ public class SecurityConfigurations {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Indica que é stateless (JWT)
                 .authorizeHttpRequests(req -> {
 
-                    req.requestMatchers(HttpMethod.POST, "/login").permitAll(); // LIBERA O LOGIN
+                    req.requestMatchers(HttpMethod.POST, "/login").permitAll();
                     req.requestMatchers(HttpMethod.POST, "/user/new").permitAll();
                     req.requestMatchers(HttpMethod.GET, "/").permitAll();
 

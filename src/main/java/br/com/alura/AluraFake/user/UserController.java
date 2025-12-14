@@ -14,7 +14,7 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // 2. Adicionar o encoder
+    private final PasswordEncoder passwordEncoder;
 
     public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;

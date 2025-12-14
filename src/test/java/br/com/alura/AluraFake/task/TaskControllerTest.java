@@ -1,5 +1,7 @@
 package br.com.alura.AluraFake.task;
 
+import br.com.alura.AluraFake.infra.security.TokenService;
+import br.com.alura.AluraFake.user.UserRepository;
 import br.com.alura.AluraFake.task.dto.NewMultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.NewOpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.NewSingleChoiceTaskDTO;
@@ -7,6 +9,7 @@ import br.com.alura.AluraFake.task.dto.OptionDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -20,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TaskController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TaskControllerTest {
 
     @Autowired
@@ -30,6 +34,13 @@ class TaskControllerTest {
 
     @MockBean
     private TaskService taskService;
+
+
+    @MockBean
+    private TokenService tokenService;
+
+    @MockBean
+    private UserRepository userRepository;
 
     // OPEN TEXT TASK TESTS
 
@@ -220,6 +231,4 @@ class TaskControllerTest {
 
         verify(taskService, never()).createMultipleChoiceTask(any(NewMultipleChoiceTaskDTO.class));
     }
-
 }
-
