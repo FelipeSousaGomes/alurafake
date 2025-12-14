@@ -127,6 +127,10 @@ public class TaskService {
             throw new IllegalArgumentException("Multiple choice task must have at least two correct options");
         }
 
+        if (correctCount == options.size()) {
+            throw new IllegalArgumentException("Multiple choice task must have at least one incorrect option");
+        }
+
         validateUniqueOptions(options, statement);
     }
 

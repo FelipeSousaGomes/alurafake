@@ -960,5 +960,33 @@ class TaskServiceTest{
         verify(taskRepository, times(1)).save(any(MultipleChoiceTask.class));
         verify(taskRepository, times(1)).saveAll(Collections.emptyList());
     }
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenAllOptionsAreCorrect() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Questão onde todas as alternativas são verdadeiras");
+        dto.setOrder(1);
+
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Opção 1", true),
+                new OptionDTO("Opção 2", true),
+                new OptionDTO("Opção 3", true)
+        ));
+
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Multiple choice task must have at least one incorrect option", exception.getMessage());
+
+
+        verify(taskRepository, never()).save(any(Task.class));
+    }
 
 }
