@@ -4,6 +4,8 @@ import br.com.alura.AluraFake.course.Course;
 import br.com.alura.AluraFake.course.CourseRepository;
 import br.com.alura.AluraFake.course.Status;
 import br.com.alura.AluraFake.task.dto.NewOpenTextTaskDTO;
+import br.com.alura.AluraFake.task.dto.NewSingleChoiceTaskDTO;
+import br.com.alura.AluraFake.task.dto.OptionDTO;
 import br.com.alura.AluraFake.user.Role;
 import br.com.alura.AluraFake.user.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,8 @@ class TaskServiceTest {
         course = spy(new Course("Java", "Curso de Java", instructor));
     }
 
+
+      // OPEN TEXT TEST
     @Test
     void createOpenTextTask_shouldCreateSuccessfully_whenDataIsValid() {
         NewOpenTextTaskDTO dto = new NewOpenTextTaskDTO();
@@ -231,6 +235,106 @@ class TaskServiceTest {
         verify(taskRepository, times(1)).saveAll(Collections.emptyList());
     }
 
+
+    // SINGLE CHOICE TESTS
+    @Test
+    void createSingleChoiceTask_shouldCreateSuccessfully_whenDataIsValid() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("São Paulo", false),
+                new OptionDTO("Brasília", true),
+                new OptionDTO("Rio de Janeiro", false)
+        ));
+
+        when(course.getId()).thenReturn(1L);
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+        when(taskRepository.countByCourseId(1L)).thenReturn(0L);
+        when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(1L, 1)).thenReturn(Collections.emptyList());
+        when(taskRepository.save(any(SingleChoiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SingleChoiceTask result = taskService.createSingleChoiceTask(dto);
+
+        assertNotNull(result);
+        assertEquals(dto.getStatement(), result.getStatement());
+        assertEquals(dto.getOrder(), result.getTaskOrder());
+        assertEquals(course, result.getCourse());
+        assertEquals(3, result.getOptions().size());
+        verify(taskRepository, times(1)).save(any(SingleChoiceTask.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenCourseNotFound() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(999L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("São Paulo", false),
+                new OptionDTO("Brasília", true)
+        ));
+
+        when(courseRepository.findById(999L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Course not found", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenCourseIsNotInBuildingStatus() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("São Paulo", false),
+                new OptionDTO("Brasília", true)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.PUBLISHED);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Course is not in BUILDING status", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenStatementAlreadyExists() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("São Paulo", false),
+                new OptionDTO("Brasília", true)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Statement already exists in this course", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
 
 
    }
