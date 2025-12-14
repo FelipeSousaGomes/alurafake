@@ -36,7 +36,8 @@ class TaskServiceTest {
     @BeforeEach
     void setUp() {
         instructor = new User("Paulo", "paulo@alura.com.br", Role.INSTRUCTOR);
-        course = new Course("Java", "Curso de Java", instructor);
+        course = spy(new Course("Java", "Curso de Java", instructor));
+        when(course.getId()).thenReturn(1L);
     }
 
 
@@ -50,8 +51,8 @@ class TaskServiceTest {
 
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
-        when(taskRepository.countByCourseId(1L)).thenReturn(0L);
-        when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(1L, 1)).thenReturn(Collections.emptyList());
+        lenient().when(taskRepository.countByCourseId(any())).thenReturn(0L);
+        lenient().when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(any(), any())).thenReturn(Collections.emptyList());
         when(taskRepository.save(any(OpenTextTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         OpenTextTask result = taskService.createOpenTextTask(dto);
