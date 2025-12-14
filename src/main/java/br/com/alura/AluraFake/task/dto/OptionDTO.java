@@ -14,7 +14,10 @@ public class OptionDTO {
     @NotNull(message = "isCorrect cannot be null")
     private Boolean isCorrect;
 
-    public OptionDTO() {}
+    public OptionDTO(String option, boolean isCorrect) {
+        this.option = option;
+        this.isCorrect = isCorrect;
+    }
 
     public String getOption() {
         return option;
