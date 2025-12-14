@@ -23,7 +23,7 @@ public class Course {
     private Status status;
     private LocalDateTime publishedAt;
 
-    @OneToMany
+    @OneToMany(mappedBy = "course", fetch = FetchType.EAGER)
     private List<Task> tasks;
 
     @Deprecated
@@ -74,4 +74,9 @@ public class Course {
     public LocalDateTime getPublishedAt() {
         return publishedAt;
     }
+
+    public List<Task> getTasks() {
+        return tasks;
+    }
+
 }

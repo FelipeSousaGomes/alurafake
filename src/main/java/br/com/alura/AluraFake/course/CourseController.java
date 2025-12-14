@@ -67,4 +67,23 @@ public class CourseController {
     }
 
 
+    // Adicionar no CourseController.java
+    @GetMapping("/instructor/{instructorId}/courses")
+    public ResponseEntity getInstructorCoursesReport(@PathVariable("instructorId") Long instructorId) {
+        Optional<User> possibleUser = userRepository.findById(instructorId);
+
+        if (possibleUser.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        if (!possibleUser.get().isInstructor()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorItemDTO("instructorId", "Usuário não é um instrutor"));
+        }
+
+        InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(instructorId);
+        return ResponseEntity.ok(report);
+    }
+
+
 }

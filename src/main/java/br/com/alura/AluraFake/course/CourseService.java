@@ -39,6 +39,21 @@ public class CourseService {
         courseRepository.save(course);
     }
 
+    public InstructorCoursesReportDTO getInstructorCoursesReport(Long instructorId) {
+        List<Course> courses = courseRepository.findByInstructorId(instructorId);
+
+        List<CourseReportItemDTO> courseItems = courses.stream()
+                .map(CourseReportItemDTO::new)
+                .toList();
+
+        Long totalPublished = courses.stream()
+                .filter(course -> course.getStatus() == Status.PUBLISHED)
+                .count();
+
+        return new InstructorCoursesReportDTO(courseItems, totalPublished);
+    }
+
+
     private void validateTaskTypes(List<Task> tasks) {
         boolean hasOpenText = tasks.stream().anyMatch(t -> t instanceof OpenTextTask);
         boolean hasSingleChoice = tasks.stream().anyMatch(t -> t instanceof SingleChoiceTask);
