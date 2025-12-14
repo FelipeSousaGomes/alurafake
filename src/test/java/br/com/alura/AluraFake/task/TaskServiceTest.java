@@ -336,5 +336,147 @@ class TaskServiceTest {
         verify(taskRepository, never()).save(any(Task.class));
     }
 
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenNoCorrectOption() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("São Paulo", false),
+                new OptionDTO("Brasília", false),
+                new OptionDTO("Rio de Janeiro", false)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Single choice task must have exactly one correct option", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenMultipleCorrectOptions() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("São Paulo", false),
+                new OptionDTO("Brasília", true),
+                new OptionDTO("Rio de Janeiro", true)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Single choice task must have exactly one correct option", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenOptionsListIsNull() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(null);
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Options list cannot be null or empty", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenOptionsListIsEmpty() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Collections.emptyList());
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Options list cannot be null or empty", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenDuplicateOptions() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Brasília", true),
+                new OptionDTO("BRASÍLIA", false),
+                new OptionDTO("Rio de Janeiro", false)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Options cannot be duplicated", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createSingleChoiceTask_shouldThrowException_whenOptionEqualsStatement() {
+        NewSingleChoiceTaskDTO dto = new NewSingleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Qual é a capital do Brasil?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Brasília", true),
+                new OptionDTO("Qual é a capital do Brasil?", false),
+                new OptionDTO("Rio de Janeiro", false)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createSingleChoiceTask(dto)
+        );
+
+        assertEquals("Option cannot be equal to statement", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
 
    }
