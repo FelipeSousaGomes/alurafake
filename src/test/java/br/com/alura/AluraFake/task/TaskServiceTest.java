@@ -37,7 +37,6 @@ class TaskServiceTest {
     void setUp() {
         instructor = new User("Paulo", "paulo@alura.com.br", Role.INSTRUCTOR);
         course = spy(new Course("Java", "Curso de Java", instructor));
-        when(course.getId()).thenReturn(1L);
     }
 
 
@@ -49,6 +48,7 @@ class TaskServiceTest {
         dto.setStatement("O que aprendemos na aula de hoje?");
         dto.setOrder(1);
 
+        when(course.getId()).thenReturn(1L);
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
         lenient().when(taskRepository.countByCourseId(any())).thenReturn(0L);
