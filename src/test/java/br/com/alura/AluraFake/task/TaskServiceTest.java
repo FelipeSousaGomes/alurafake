@@ -3,6 +3,7 @@ package br.com.alura.AluraFake.task;
 import br.com.alura.AluraFake.course.Course;
 import br.com.alura.AluraFake.course.CourseRepository;
 import br.com.alura.AluraFake.course.Status;
+import br.com.alura.AluraFake.task.dto.NewMultipleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.NewOpenTextTaskDTO;
 import br.com.alura.AluraFake.task.dto.NewSingleChoiceTaskDTO;
 import br.com.alura.AluraFake.task.dto.OptionDTO;
@@ -606,6 +607,110 @@ class TaskServiceTest {
         assertEquals(4, result.getTaskOrder());
         verify(taskRepository, times(1)).save(any(SingleChoiceTask.class));
         verify(taskRepository, times(1)).saveAll(Collections.emptyList());
+    }
+
+
+    // MULTIPLE CHOICE TESTS
+    @Test
+    void createMultipleChoiceTask_shouldCreateSuccessfully_whenDataIsValid() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são princípios do SOLID?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Single Responsibility", true),
+                new OptionDTO("Open/Closed", true),
+                new OptionDTO("Singleton Pattern", false),
+                new OptionDTO("Liskov Substitution", true)
+        ));
+
+        when(course.getId()).thenReturn(1L);
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(false);
+        when(taskRepository.countByCourseId(1L)).thenReturn(0L);
+        when(taskRepository.findByCourseIdAndTaskOrderGreaterThanEqual(1L, 1)).thenReturn(Collections.emptyList());
+        when(taskRepository.save(any(MultipleChoiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MultipleChoiceTask result = taskService.createMultipleChoiceTask(dto);
+
+        assertNotNull(result);
+        assertEquals(dto.getStatement(), result.getStatement());
+        assertEquals(dto.getOrder(), result.getTaskOrder());
+        assertEquals(course, result.getCourse());
+        assertEquals(4, result.getOptions().size());
+        verify(taskRepository, times(1)).save(any(MultipleChoiceTask.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenCourseNotFound() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(999L);
+        dto.setStatement("Quais são tipos primitivos em Java?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("int", true),
+                new OptionDTO("String", false),
+                new OptionDTO("double", true)
+        ));
+
+        when(courseRepository.findById(999L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Course not found", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenCourseIsNotInBuildingStatus() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são modificadores de acesso em Java?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("public", true),
+                new OptionDTO("private", true),
+                new OptionDTO("protected", true)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.PUBLISHED);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Course is not in BUILDING status", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void createMultipleChoiceTask_shouldThrowException_whenStatementAlreadyExists() {
+        NewMultipleChoiceTaskDTO dto = new NewMultipleChoiceTaskDTO();
+        dto.setCourseId(1L);
+        dto.setStatement("Quais são princípios do SOLID?");
+        dto.setOrder(1);
+        dto.setOptions(Arrays.asList(
+                new OptionDTO("Single Responsibility", true),
+                new OptionDTO("Open/Closed", true)
+        ));
+
+        when(course.getStatus()).thenReturn(Status.BUILDING);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(taskRepository.existsByCourseAndStatement(course, dto.getStatement())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.createMultipleChoiceTask(dto)
+        );
+
+        assertEquals("Statement already exists in this course", exception.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
     }
 
 
