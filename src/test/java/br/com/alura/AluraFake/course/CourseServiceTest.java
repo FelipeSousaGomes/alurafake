@@ -175,5 +175,72 @@ class CourseServiceTest {
         verify(courseRepository, never()).save(any(Course.class));
     }
 
+    //INSTRUCTOR COURSES REPORT TESTS
+
+    @Test
+    void getInstructorCoursesReport_shouldReturnEmptyReport_whenInstructorHasNoCourses() {
+        when(courseRepository.findByInstructorId(1L)).thenReturn(Collections.emptyList());
+
+        InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(1L);
+
+        assertNotNull(report);
+        assertEquals(0, report.getCourses().size());
+        assertEquals(0L, report.getTotalPublishedCourses());
+    }
+
+    @Test
+    void getInstructorCoursesReport_shouldReturnReport_whenInstructorHasCourses() {
+        Course course1 = new Course("Java", "Curso de Java", instructor);
+        Course course2 = new Course("Python", "Curso de Python", instructor);
+
+        when(courseRepository.findByInstructorId(1L)).thenReturn(Arrays.asList(course1, course2));
+
+        InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(1L);
+
+        assertNotNull(report);
+        assertEquals(2, report.getCourses().size());
+    }
+
+    @Test
+    void getInstructorCoursesReport_shouldCountOnlyPublishedCourses() {
+        Course publishedCourse1 = spy(new Course("Java", "Curso de Java", instructor));
+        when(publishedCourse1.getStatus()).thenReturn(Status.PUBLISHED);
+
+        Course buildingCourse = spy(new Course("Python", "Curso de Python", instructor));
+        when(buildingCourse.getStatus()).thenReturn(Status.BUILDING);
+
+        Course publishedCourse2 = spy(new Course("Kotlin", "Curso de Kotlin", instructor));
+        when(publishedCourse2.getStatus()).thenReturn(Status.PUBLISHED);
+
+        when(courseRepository.findByInstructorId(1L)).thenReturn(
+                Arrays.asList(publishedCourse1, buildingCourse, publishedCourse2)
+        );
+
+        InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(1L);
+
+        assertNotNull(report);
+        assertEquals(3, report.getCourses().size());
+        assertEquals(2L, report.getTotalPublishedCourses());
+    }
+
+    @Test
+    void getInstructorCoursesReport_shouldIncludeAllCoursesInList() {
+        Course publishedCourse = spy(new Course("Java", "Curso de Java", instructor));
+        when(publishedCourse.getStatus()).thenReturn(Status.PUBLISHED);
+
+        Course buildingCourse = spy(new Course("Python", "Curso de Python", instructor));
+        when(buildingCourse.getStatus()).thenReturn(Status.BUILDING);
+
+        when(courseRepository.findByInstructorId(1L)).thenReturn(
+                Arrays.asList(publishedCourse, buildingCourse)
+        );
+
+        InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(1L);
+
+        assertNotNull(report);
+        assertEquals(2, report.getCourses().size());
+        assertEquals(1L, report.getTotalPublishedCourses());
+    }
+
 }
 
