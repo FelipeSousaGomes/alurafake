@@ -3,7 +3,6 @@ package br.com.alura.AluraFake.course;
 import br.com.alura.AluraFake.infra.security.TokenService;
 import br.com.alura.AluraFake.user.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,17 +39,13 @@ class CourseControllerTest {
     @MockBean
     private CourseService courseService;
 
-
     @MockBean
     private TokenService tokenService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-
-
     @Test
-    @DisplayName("Deve criar curso com sucesso quando usuário é instrutor")
     void createCourse_ShouldReturnCreated_WhenUserIsInstructor() throws Exception {
         NewCourseDTO newCourseDTO = new NewCourseDTO();
         newCourseDTO.setTitle("Java OO");
@@ -58,14 +53,13 @@ class CourseControllerTest {
 
         User instructor = new User("Paulo", "paulo@alura.com.br", Role.INSTRUCTOR);
 
-        // Mock do Principal (simula o usuário logado injetado pelo Spring Security)
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn("paulo@alura.com.br");
 
         when(userRepository.findByEmail("paulo@alura.com.br")).thenReturn(Optional.of(instructor));
 
         mockMvc.perform(post("/course/new")
-                        .principal(principal) // Injeta o mock do usuário logado
+                        .principal(principal)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newCourseDTO)))
                 .andExpect(status().isCreated());
@@ -74,7 +68,6 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar Forbidden quando usuário é estudante")
     void createCourse_ShouldReturnForbidden_WhenUserIsStudent() throws Exception {
         NewCourseDTO newCourseDTO = new NewCourseDTO();
         newCourseDTO.setTitle("Java OO");
@@ -92,7 +85,7 @@ class CourseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newCourseDTO)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Apenas instrutores podem criar cursos"));
+                .andExpect(jsonPath("$.message").value("Only instructors can create courses."));
     }
 
     @Test
@@ -100,7 +93,6 @@ class CourseControllerTest {
         NewCourseDTO newCourseDTO = new NewCourseDTO();
         newCourseDTO.setTitle("Java");
         newCourseDTO.setDescription("Desc");
-
 
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn("fantasma@alura.com.br");
@@ -111,16 +103,11 @@ class CourseControllerTest {
                         .principal(principal)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newCourseDTO)))
-
                 .andExpect(status().isBadRequest())
-
-                .andExpect(jsonPath("$.message").value("Usuário logado não encontrado no banco"));
+                .andExpect(jsonPath("$.message").value("Logged-in user not found in the database"));
     }
 
-
-
     @Test
-    @DisplayName("Deve listar todos os cursos")
     void listAllCourses_ShouldReturnList() throws Exception {
         User instructor = new User("Inst", "i@a.com", Role.INSTRUCTOR);
         Course c1 = new Course("Java", "Desc Java", instructor);
@@ -135,9 +122,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$[1].title").value("Spring"));
     }
 
-
     @Test
-    @DisplayName("Deve publicar curso com sucesso (204)")
     void publishCourse_ShouldReturnNoContent_WhenSuccess() throws Exception {
         Long courseId = 1L;
         doNothing().when(courseService).publishCourse(courseId);
@@ -149,21 +134,20 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar BadRequest (400) quando serviço falha")
     void publishCourse_ShouldReturnBadRequest_WhenServiceFails() throws Exception {
         Long courseId = 1L;
-        doThrow(new IllegalArgumentException("Curso incompleto")).when(courseService).publishCourse(courseId);
+        String errorMessage = "Course incomplete";
+        doThrow(new IllegalArgumentException(errorMessage)).when(courseService).publishCourse(courseId);
 
         mockMvc.perform(post("/course/{id}/publish", courseId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Curso incompleto"));
+                .andExpect(jsonPath("$.message").value(errorMessage));
     }
 
     @Test
     void getInstructorCoursesReport_ShouldReturnOk_WhenUserIsInstructor() throws Exception {
         Long instructorId = 1L;
         User instructor = new User("Paulo", "paulo@alura.com.br", Role.INSTRUCTOR);
-
 
         InstructorCoursesReportDTO mockReport = new InstructorCoursesReportDTO(
                 Collections.emptyList(),
@@ -175,12 +159,10 @@ class CourseControllerTest {
 
         mockMvc.perform(get("/instructor/{instructorId}/courses", instructorId))
                 .andExpect(status().isOk())
-
                 .andExpect(jsonPath("$.courses").isArray());
     }
 
     @Test
-    @DisplayName("Deve retornar NotFound (404) quando usuário não existe")
     void getInstructorCoursesReport_ShouldReturnNotFound_WhenUserDoesNotExist() throws Exception {
         Long instructorId = 99L;
         when(userRepository.findById(instructorId)).thenReturn(Optional.empty());
@@ -192,7 +174,6 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar BadRequest (400) quando usuário não é instrutor")
     void getInstructorCoursesReport_ShouldReturnBadRequest_WhenUserIsNotInstructor() throws Exception {
         Long studentId = 2L;
         User student = new User("Caio", "caio@alura.com.br", Role.STUDENT);
@@ -201,7 +182,7 @@ class CourseControllerTest {
 
         mockMvc.perform(get("/instructor/{instructorId}/courses", studentId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Usuário informado não é um instrutor"));
+                .andExpect(jsonPath("$.message").value("An informed user is not an instructor."));
 
         verify(courseService, never()).getInstructorCoursesReport(any());
     }
