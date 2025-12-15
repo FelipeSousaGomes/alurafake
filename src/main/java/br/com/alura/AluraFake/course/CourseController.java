@@ -33,11 +33,11 @@ public class CourseController {
         String emailLogado = principal.getName();
 
         User instructor = userRepository.findByEmail(emailLogado)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário logado não encontrado no banco"));
+                .orElseThrow(() -> new IllegalArgumentException("Logged-in user not found in the database"));
 
         if (!instructor.isInstructor()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorItemDTO("user", "Apenas instrutores podem criar cursos"));
+                    .body(new ErrorItemDTO("user", "Only instructors can create courses."));
         }
 
         Course course = new Course(newCourse.getTitle(), newCourse.getDescription(), instructor);
@@ -75,7 +75,7 @@ public class CourseController {
 
         if (!possibleUser.get().isInstructor()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorItemDTO("instructorId", "Usuário informado não é um instrutor"));
+                    .body(new ErrorItemDTO("instructorId", "An informed user is not an instructor."));
         }
 
         InstructorCoursesReportDTO report = courseService.getInstructorCoursesReport(instructorId);

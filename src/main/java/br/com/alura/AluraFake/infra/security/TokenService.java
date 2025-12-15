@@ -5,16 +5,21 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import org.springframework.beans.factory.annotation.Value; // Import necessário
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 
 @Service
 public class TokenService {
 
 
-    private String secret = "12345678";
+    @Value("${api.security.token.secret}")
+    private String secret;
+
+
+    @Value("${api.security.token.expiration}")
+    private Long expirationTime;
 
     public String generateToken(User user) {
         try {
@@ -23,7 +28,7 @@ public class TokenService {
                     .withIssuer("AluraFake_API")
                     .withSubject(user.getEmail())
 
-                    .withExpiresAt(LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00")))
+                    .withExpiresAt(Instant.now().plusMillis(expirationTime))
                     .sign(algorithm);
         } catch (JWTCreationException exception){
             throw new RuntimeException("Erro ao gerar token JWT", exception);
